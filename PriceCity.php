@@ -37,6 +37,10 @@ class PriceCity extends \yii\db\ActiveRecord
         ];
     }
 
+    /**
+     * Get country name.
+     * @return mixed
+     */
     public function getCountryName()
     {
         if (!empty($this->country_id)) {
@@ -55,6 +59,10 @@ class PriceCity extends \yii\db\ActiveRecord
         }
     }
 
+    /**
+     * Get region name.
+     * @return mixed
+     */
     public function getRegionName()
     {
         if (!empty($this->region_id)) {
@@ -70,6 +78,10 @@ class PriceCity extends \yii\db\ActiveRecord
         }
     }
 
+    /**
+     * Get city name.
+     * @return mixed
+     */
     public function getCityName()
     {
         if (!empty($this->city_id)) {
@@ -85,16 +97,20 @@ class PriceCity extends \yii\db\ActiveRecord
         }
     }
 
+    /**
+     * Обработка трех первых закрепленных вакансий/резюме.
+     * @return mixed
+     */
     public static function getFirst3($type_table,$id,$category_id, $type_engine='')
     {
         $id = (int) $id;
-        if (is_array($category_id)){
+        if (is_array($category_id)) {
             $main_category = $category_id[0];
             $q  = 'select parent_id from category where id='.$main_category;
             $parent_id = Yii::$app->db->createCommand($q)->queryScalar();
             $_category = $category_id;
             $not_in = implode(',',$category_id);
-        }else{
+        } else {
             $main_category = $category_id;
             $q  = 'select parent_id from category where id='.$category_id;
             $parent_id = Yii::$app->db->createCommand($q)->queryScalar();
@@ -103,7 +119,7 @@ class PriceCity extends \yii\db\ActiveRecord
         }
 
         $arr = [];
-        if ($parent_id == 0 ){
+        if ($parent_id == 0) {
             $q = 'select * from target_'.$type_table.$type_engine.' where '.$type_table.'_id ='.$id.' and category_id = '.$main_category.' ';
             $q .= ' and ( (id_vacancy1 > 0 ) or (id_vacancy2 > 0) or ( id_vacancy3 > 0 ))';
             $res = Yii::$app->db->createCommand($q)->queryOne();
@@ -116,7 +132,7 @@ class PriceCity extends \yii\db\ActiveRecord
         if ($count_top == 3) return $arr;
 
         $count_add = 3-$count_top;
-        if (count($_category) > 0){
+        if (count($_category) > 0) {
             $category = implode(',',$_category);
 
             $q = 'select * from target_'.$type_table.$type_engine.' where '.$type_table.'_id ='.$id.' and category_id in ( '.$category.' )';
@@ -124,7 +140,7 @@ class PriceCity extends \yii\db\ActiveRecord
             $res = Yii::$app->db->createCommand($q)->queryAll();
 
             PriceCountry::addTop3($arr,$res,$count_add);
-        }elseif($main_category == 0){
+        } elseif ($main_category == 0) {
             $q  = 'select id from category ';
             $res_cat = Yii::$app->db->createCommand($q)->queryAll();
             $s = PriceCity::array_to_str($res_cat);
@@ -139,7 +155,7 @@ class PriceCity extends \yii\db\ActiveRecord
         $count_top = count($arr);
         if ($count_top == 3) return $arr;
 
-        if ($parent_id > 0 ){
+        if ($parent_id > 0) {
             $q = 'select parent_id from category  where id ='.$main_category;
             $main_category = Yii::$app->db->createCommand($q)->queryScalar();
 
@@ -161,17 +177,25 @@ class PriceCity extends \yii\db\ActiveRecord
     }
 
 
+    /**
+     * Проверка на публикацию в топе.
+     * @return mixed
+     */
     public static function isPublishTop( $vacancy_id, $res)
     {
         if (($res['id_vacancy1'] == $vacancy_id) || ($res['id_vacancy2'] == $vacancy_id) || ($res['id_vacancy3'] == $vacancy_id)) return true;
         else return false;
     }
 
-    public static function updateFinishTop( $res,$type_table)
+    /**
+     * Обновление топа.
+     * @return mixed
+     */
+    public static function updateFinishTop($res,$type_table)
     {
         $now = new \DateTime();
         $s = '';
-        for ($i=1; $i<=3; $i++){
+        for ($i=1; $i<=3; $i++) {
             if ( ($res['id_vacancy'.$i] > 0) && ( new \DateTime($res['date_end'.$i]) <= $now)) {
                 $s .= 'id_vacancy'.$i.'=0, date_create'.$i.' = "0", date_end'.$i.'="0",';
             }
@@ -188,11 +212,16 @@ class PriceCity extends \yii\db\ActiveRecord
         return  $answ;
     }
 
-    public static function getPriceCategory($category_id, $type_engine='')
+    /**
+     * Получение цены для категории.
+     * @return mixed
+     */
+    public static function getPriceCategory($category_id, $type_engine = '')
     {
         $cache_id = 'price_category_'.$category_id.$type_engine;
         $data = Yii::$app->cache->get($cache_id);
-        if ($data  && Yii::$app->params['is_cache']) return $data;
+        if ($data  && Yii::$app->params['is_cache'])
+            return $data;
 
         $field_price = 'price'.$type_engine;
         $q = 'select '.$field_price.' from category  where id = :id ';
@@ -203,11 +232,16 @@ class PriceCity extends \yii\db\ActiveRecord
         }
     }
 
+    /**
+     * Получение для цены всех категорий.
+     * @return mixed
+     */
     public static function getPriceAllCategory($type_price)
     {
         $cache_id = 'price_allcategory_'.$type_price;
         $data = Yii::$app->cache->get($cache_id);
-        if ($data  && Yii::$app->params['is_cache']) return $data;
+        if ($data  && Yii::$app->params['is_cache'])
+            return $data;
 
         $q = 'select '.$type_price.' from price_country  where country_id = 0 ';
         $target = Yii::$app->db->createCommand($q)->queryOne();
@@ -215,9 +249,13 @@ class PriceCity extends \yii\db\ActiveRecord
         return $target[$type_price];
     }
 
+    /**
+     * GПолучение цены для региона.
+     * @return mixed
+     */
     public static function getPriceRegion($region_id, $type_price, $category_id = null, $type_engine='')
     {
-        if ($type_price == 'price_city'){
+        if ($type_price == 'price_city') {
             $q = 'select if( (select count(*) from price_region  where region_id =:id)>0 ,';
             $q .= ' (select price'.$type_engine.' from  price_region  where region_id =:id), ';
             $q .= ' (select '.$type_price.$type_engine.' from price_country  where country_id = 1) ) as '.$type_price;
@@ -247,7 +285,7 @@ class PriceCity extends \yii\db\ActiveRecord
 
     public static function getAllPriceRegion($region_id, $category_id, $type_engine='')
     {
-       $field_price = 'price_region'.$type_engine;
+        $field_price = 'price_region'.$type_engine;
         $price_region = self::getPriceRegion($region_id, 'price_region', $category_id,$type_engine);
         $price_category = ($category_id == 0) ? self::getPriceAllCategory($field_price) : self::getPriceCategory($category_id,$type_engine);
         return $price_region + $price_category;
@@ -354,14 +392,14 @@ class PriceCity extends \yii\db\ActiveRecord
         $res = [];
         if (count($arr)>0)
             foreach ($arr as $key=>$value){
-                if (is_array($value)){
+                if (is_array($value)) {
                     foreach ($value as $key1=>$val)
                         if ($key1 == 0) $res[$key][] = ['id' => 0,'name' => 'все категории', 'price' => $val];
                         else{
                             $model = Category::findOne($key1);
                             $res[$key][] = ['id' => $key1, 'name' => $model['ru'], 'price' => $val];
                         }
-                }else $res[$key][] = ['id' => 0, 'name' => 0, 'price' => 0];
+                } else $res[$key][] = ['id' => 0, 'name' => 0, 'price' => 0];
             }
         return $res;
     }
